@@ -36,7 +36,8 @@ O preço monetário por DEM é contratual; por isso, a calculadora só converte 
 - sessões synthetic/robot não entram no consumo de sessões reais;
 - sessões com replay usam a linha de preço “RUM with Session Replay”, não somam a linha base novamente;
 - até 20 propriedades de sessão por aplicação estão incluídas;
-- propriedades acima de 20 são faturadas por sessão em que aparecem.
+- no DPS, propriedades acima de 20 são faturadas por sessão em que aparecem;
+- no Classic, a regra pública considera cada propriedade adicional definida por sessão (incluindo action e session properties e pesos por tipo/tamanho).
 
 ## Fórmula DPS
 
@@ -64,6 +65,8 @@ custo = semReplay × pRum
 ```
 
 `H` é um fator médio. Como o faturamento usa cada hora iniciada, não calcule simplesmente `média de minutos / 60`. Exemplo: visita de 70 minutos conta 2. Se houver distribuição real, estime `H` por faixas: `1 × %até60 + 2 × %61–120 + 3 × %121–180 + ...`.
+
+No modo Classic da calculadora, o número de propriedades adicionais definidas é multiplicado por todas as sessões; a presença média é usada apenas no cálculo DPS.
 
 ## Exemplo
 
@@ -130,4 +133,3 @@ Reduzir coleta pode prejudicar diagnóstico. Faça mudanças com hipótese, jane
 - [Visão de RUM e Synthetic no DPS](https://docs.dynatrace.com/docs/license/capabilities/real-user-synthetic-monitoring)
 
 Valores e regras verificados em 4 de setembro de 2026.
-

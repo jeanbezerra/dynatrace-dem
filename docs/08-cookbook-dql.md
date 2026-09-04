@@ -249,7 +249,7 @@ fetch user.sessions, from: now() - 25h, to: now() - 1h
     sessoes = count(),
     erros = sum(toLong(error.count)),
     crashes = countIf(error.has_crash),
-    by:{frontend.name, os.name, app.short_version}
+    by:{frontend.name, os.name}
 | sort erros desc
 ```
 
@@ -327,4 +327,3 @@ fetch dt.system.events, from: now() - 30d
 - [Modelo de user events](https://docs.dynatrace.com/docs/semantic-dictionary/model/rum/user-events)
 - [User actions](https://docs.dynatrace.com/docs/semantic-dictionary/model/rum/user-events/user-actions)
 - [Consumo RUM e BUE](https://docs.dynatrace.com/docs/license/capabilities/real-user-synthetic-monitoring/real-user-monitoring)
-

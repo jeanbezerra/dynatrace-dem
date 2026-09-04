@@ -304,10 +304,15 @@
       .kpi .value { font-size: 24px; }
     }
     @media (max-width: 580px) {
-      .shell { width: min(100% - 20px, 1440px); }
-      .topbar { align-items: flex-start; }
+      html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
+      .shell { width: 100%; max-width: 100%; padding-right: 10px; padding-left: 10px; }
+      .topbar { flex-direction: column; align-items: stretch; }
       .brand div span { display: none; }
+      .actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; }
+      .actions .btn { min-width: 0; padding-right: 8px; padding-left: 8px; font-size: 13px; }
       .hero { padding-top: 25px; }
+      .hero, .layout, .hero > *, .layout > *, .form-panel, .results, .panel { min-width: 0; max-width: 100%; }
+      h1 { max-width: 100%; overflow-wrap: anywhere; }
       .field-grid, .kpis { grid-template-columns: 1fr; }
       .field.span-2, .section-title { grid-column: span 1; }
       .scenario-grid { grid-template-columns: 1fr 1fr; }
@@ -546,10 +551,11 @@
             <summary>Fórmula</summary>
             <div class="formula">sessões = visitas × (1 − bounce) × apps × blocos/hora × captura RUM
 replay = sessões × captura replay
-extras = max(0, propriedades − 20) × sessões × presença
+extrasDPS = max(0, propriedades − 20) × sessões × presença
+extrasDEM = max(0, propriedades − 20) × sessões
 
-DPS = semReplay × preçoRUM + replay × preçoReplay + extras × preçoPropriedade
-DEM = semReplay × 0,25 + replay × 1,0 + extras × 0,01</div>
+DPS = semReplay × preçoRUM + replay × preçoReplay + extrasDPS × preçoPropriedade
+DEM = semReplay × 0,25 + replay × 1,0 + extrasDEM × 0,01</div>
           </details>
           <details>
             <summary>Regras e limitações</summary>
@@ -557,7 +563,7 @@ DEM = semReplay × 0,25 + replay × 1,0 + extras × 0,01</div>
               <li>Visitas com uma única ação (bounce) não são faturadas.</li>
               <li>Cada aplicação e cada hora iniciada podem gerar nova sessão faturável; híbrido web/mobile é exceção.</li>
               <li>Replay substitui o preço base da sessão; não é somado como uma segunda sessão.</li>
-              <li>Até 20 propriedades por aplicação são incluídas; as extras são cobradas nas sessões em que aparecem.</li>
+              <li>No DPS, as extras são cobradas nas sessões em que aparecem. No Classic, a regra pública usa propriedades adicionais definidas por sessão.</li>
               <li>A estimativa não inclui descontos, compromisso, overage, Synthetic ou outras capacidades.</li>
             </ul>
           </details>
@@ -649,6 +655,9 @@ DEM = semReplay × 0,25 + replay × 1,0 + extras × 0,01</div>
         const baseSessions = billedSessions - replaySessions;
         const extraPropertyCount = Math.max(0, v.properties - 20);
         const propertyOccurrences = billedSessions * extraPropertyCount * (v.propertyPresence / 100);
+        // Classic charges each additional defined property per session; DPS charges
+        // an additional property only in sessions in which it appears.
+        const demPropertyOccurrences = billedSessions * extraPropertyCount;
 
         const dpsBase = baseSessions * v.rumPrice;
         const dpsReplay = replaySessions * v.replayPrice;
@@ -657,7 +666,7 @@ DEM = semReplay × 0,25 + replay × 1,0 + extras × 0,01</div>
 
         const demBase = baseSessions * v.demRumRate;
         const demReplay = replaySessions * v.demReplayRate;
-        const demProps = propertyOccurrences * v.demPropertyRate;
+        const demProps = demPropertyOccurrences * v.demPropertyRate;
         const demTotal = demBase + demReplay + demProps;
 
         return {
@@ -670,6 +679,7 @@ DEM = semReplay × 0,25 + replay × 1,0 + extras × 0,01</div>
           baseSessions,
           extraPropertyCount,
           propertyOccurrences,
+          demPropertyOccurrences,
           dps: { base: dpsBase, replay: dpsReplay, props: dpsProps, total: dpsTotal },
           dem: { base: demBase, replay: demReplay, props: demProps, total: demTotal },
           monetaryClassic: demTotal * v.demPrice
@@ -707,11 +717,14 @@ DEM = semReplay × 0,25 + replay × 1,0 + extras × 0,01</div>
         $("eligibleDetail").textContent = `${formatNumber(value.eligibleVisits)} visitas não bounce`;
         $("replaySessions").textContent = compactFmt.format(value.replaySessions);
         $("replayDetail").textContent = `${formatNumber(value.replayCapture)}% do RUM capturado`;
-        $("propertyOccurrences").textContent = compactFmt.format(value.propertyOccurrences);
-        $("propertyDetail").textContent = `${formatNumber(value.extraPropertyCount)} além das 20 incluídas`;
+        const displayedPropertyOccurrences = classic ? value.demPropertyOccurrences : value.propertyOccurrences;
+        $("propertyOccurrences").textContent = compactFmt.format(displayedPropertyOccurrences);
+        $("propertyDetail").textContent = classic
+          ? `${formatNumber(value.extraPropertyCount)} definidas além das 20 incluídas`
+          : `${formatNumber(value.extraPropertyCount)} além das 20 incluídas`;
         $("baseQuantity").textContent = formatNumber(value.baseSessions);
         $("replayQuantity").textContent = formatNumber(value.replaySessions);
-        $("propsQuantity").textContent = formatNumber(value.propertyOccurrences);
+        $("propsQuantity").textContent = formatNumber(displayedPropertyOccurrences);
 
         const parts = classic
           ? [value.dem.base, value.dem.replay, value.dem.props]
@@ -753,7 +766,9 @@ DEM = semReplay × 0,25 + replay × 1,0 + extras × 0,01</div>
           `${formatNumber(value.eligibleVisits)} visitas elegíveis após ${formatNumber(value.bounceRate)}% de bounce.`,
           `${formatNumber(value.appsPerVisit)} app(s) × ${formatNumber(value.hourBlocks)} bloco(s) de hora × ${formatNumber(value.captureRate)}% de captura.`,
           `${formatNumber(value.baseSessions)} sessões sem replay e ${formatNumber(value.replaySessions)} com replay.`,
-          `${formatNumber(value.extraPropertyCount)} propriedades extras com presença média de ${formatNumber(value.propertyPresence)}%.`
+          classic
+            ? `${formatNumber(value.extraPropertyCount)} propriedades definidas acima das 20 incluídas; Classic considera cada uma por sessão.`
+            : `${formatNumber(value.extraPropertyCount)} propriedades extras com presença média de ${formatNumber(value.propertyPresence)}%.`
         ].map((line) => `<li>${line}</li>`).join("");
 
         $("scenarioGrid").innerHTML = [25, 50, 75, 100].map((rate) => {
