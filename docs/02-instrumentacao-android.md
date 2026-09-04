@@ -159,10 +159,6 @@ Não inclua IDs de produto, conta, pedido ou usuário no nome da view. Leve essa
 Use ação manual para fluxos significativos que atravessam callbacks/telas:
 
 ```kotlin
-import com.dynatrace.android.agent.Dynatrace
-import com.dynatrace.android.agent.UserAction
-import com.dynatrace.android.agent.conf.UserActionConfiguration
-
 private var checkoutAction: UserAction? = null
 
 fun beginCheckout(cartTotal: Double, itemCount: Int) {
@@ -186,7 +182,7 @@ fun finishCheckout(success: Boolean, reason: String? = null) {
 }
 ```
 
-Os packages exatos podem variar por versão; aceite o autocomplete/API do SDK instalado e o snippet do wizard. O contrato funcional é: `createUserAction` → propriedades → `complete()`.
+Os packages/imports exatos podem variar por versão; use o autocomplete/API do SDK instalado e o snippet do wizard. O contrato funcional é: `createUserAction` → propriedades → `complete()`.
 
 A detecção automática fica ativa por padrão. Pode ser controlada em runtime:
 
@@ -207,8 +203,6 @@ Dynatrace.identifyUser("usr_8f6e2d")
 Envie contexto de sessão somente após autorizar as chaves no frontend:
 
 ```kotlin
-import com.dynatrace.android.agent.events.SessionPropertyEventData
-
 Dynatrace.sendSessionPropertyEvent(
     SessionPropertyEventData()
         .addSessionProperty("session_properties.product_tier", "premium")
@@ -278,4 +272,3 @@ Depois:
 - [Usuário e sessão Android](https://docs.dynatrace.com/docs/observe/digital-experience/rum/mobile-frontends/android/id-09-user-and-session)
 - [Ações Android](https://docs.dynatrace.com/docs/observe/digital-experience/rum/mobile-frontends/android/id-10-user-actions)
 - [Session Replay Android](https://docs.dynatrace.com/docs/observe/digital-experience/session-replay-latest/configure-session-replay-mobile/latest-session-replay-android)
-

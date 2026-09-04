@@ -1,0 +1,834 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Calculadora educacional de consumo e custo do Dynatrace RUM para DPS e DEM Classic.">
+  <title>Calculadora de custo · Dynatrace RUM</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #070b14;
+      --surface: #101727;
+      --surface-2: #151e31;
+      --surface-3: #1b263c;
+      --border: #27344d;
+      --text: #f4f7fb;
+      --muted: #9ba9be;
+      --green: #b5f542;
+      --green-2: #74d55f;
+      --purple: #9d7cff;
+      --cyan: #55d6ef;
+      --orange: #ffb661;
+      --danger: #ff767e;
+      --shadow: 0 18px 54px rgb(0 0 0 / 28%);
+      --radius: 18px;
+      --mono: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-width: 320px;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 5% -10%, rgb(157 124 255 / 18%), transparent 35rem),
+        radial-gradient(circle at 100% 5%, rgb(85 214 239 / 12%), transparent 32rem),
+        var(--bg);
+      font-family: var(--sans);
+      line-height: 1.5;
+    }
+
+    a { color: var(--cyan); }
+    a:hover { color: #a7effc; }
+    button, input, select { font: inherit; }
+    button, select, input { color: inherit; }
+
+    .skip-link {
+      position: fixed;
+      top: 8px;
+      left: 8px;
+      z-index: 100;
+      padding: 10px 14px;
+      color: #07100a;
+      background: var(--green);
+      border-radius: 8px;
+      transform: translateY(-150%);
+    }
+    .skip-link:focus { transform: none; }
+
+    .shell { width: min(1440px, calc(100% - 32px)); margin: 0 auto; }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 24px 0 18px;
+    }
+
+    .brand { display: flex; align-items: center; gap: 13px; }
+    .mark {
+      position: relative;
+      width: 38px;
+      height: 38px;
+      overflow: hidden;
+      border: 1px solid rgb(255 255 255 / 18%);
+      border-radius: 11px;
+      background: linear-gradient(145deg, var(--purple), #5935d9 48%, var(--cyan));
+      box-shadow: 0 0 24px rgb(157 124 255 / 32%);
+    }
+    .mark::before, .mark::after {
+      position: absolute;
+      content: "";
+      border-radius: 50%;
+      background: var(--green);
+    }
+    .mark::before { width: 22px; height: 22px; top: 8px; left: 8px; opacity: .95; }
+    .mark::after { width: 13px; height: 13px; top: 12px; left: 12px; background: #5835d8; }
+    .brand strong { display: block; font-size: 14px; letter-spacing: .08em; text-transform: uppercase; }
+    .brand div span { display: block; color: var(--muted); font-size: 12px; }
+
+    .actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+    .btn {
+      min-height: 40px;
+      padding: 8px 13px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface-2);
+      cursor: pointer;
+      transition: border-color .2s, background .2s, transform .2s;
+    }
+    .btn:hover { border-color: #526383; background: var(--surface-3); transform: translateY(-1px); }
+    .btn.primary { color: #091005; border-color: var(--green); background: var(--green); font-weight: 750; }
+    .btn.primary:hover { background: #c8ff65; }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(290px, .65fr);
+      gap: 22px;
+      padding: 34px 0 28px;
+      border-top: 1px solid var(--border);
+    }
+    .eyebrow { margin: 0 0 12px; color: var(--green); font: 700 12px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+    h1 { max-width: 850px; margin: 0; font-size: clamp(36px, 6vw, 76px); line-height: .98; letter-spacing: -.055em; }
+    .lead { max-width: 720px; margin: 21px 0 0; color: var(--muted); font-size: clamp(16px, 2vw, 20px); }
+
+    .hero-note {
+      align-self: end;
+      padding: 20px;
+      border: 1px solid rgb(181 245 66 / 27%);
+      border-radius: var(--radius);
+      background: linear-gradient(145deg, rgb(181 245 66 / 10%), rgb(16 23 39 / 78%));
+    }
+    .hero-note strong { display: block; margin-bottom: 7px; color: var(--green); }
+    .hero-note p { margin: 0; color: #cbd5e5; font-size: 14px; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(320px, .78fr) minmax(470px, 1.22fr);
+      gap: 20px;
+      align-items: start;
+      padding-bottom: 60px;
+    }
+
+    .panel {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: rgb(16 23 39 / 92%);
+      box-shadow: var(--shadow);
+    }
+    .form-panel { overflow: hidden; }
+    .panel-header { padding: 20px 22px; border-bottom: 1px solid var(--border); }
+    .panel-header h2 { margin: 0; font-size: 18px; letter-spacing: -.02em; }
+    .panel-header p { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
+
+    .form-body { padding: 20px 22px 24px; }
+    .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .field { min-width: 0; }
+    .field.span-2 { grid-column: span 2; }
+    .field label { display: flex; justify-content: space-between; gap: 8px; margin: 0 0 7px; font-size: 13px; font-weight: 680; }
+    .hint { color: var(--muted); font-size: 11px; font-weight: 450; }
+    .control-wrap { position: relative; }
+    .control-wrap .suffix {
+      position: absolute;
+      top: 50%;
+      right: 12px;
+      color: var(--muted);
+      font: 12px/1 var(--mono);
+      pointer-events: none;
+      transform: translateY(-50%);
+    }
+    input, select {
+      width: 100%;
+      min-height: 44px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      outline: none;
+      background: #0b1120;
+    }
+    .has-suffix input { padding-right: 54px; }
+    input:focus, select:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgb(181 245 66 / 11%); }
+    input:invalid { border-color: var(--danger); }
+
+    .section-title {
+      grid-column: span 2;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 9px 0 -1px;
+      color: #dce4f1;
+      font: 700 11px/1 var(--mono);
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    .section-title::after { flex: 1; height: 1px; content: ""; background: var(--border); }
+    [hidden] { display: none !important; }
+
+    .results { display: grid; gap: 16px; }
+    .summary {
+      position: relative;
+      overflow: hidden;
+      padding: 26px;
+      border-color: rgb(157 124 255 / 34%);
+      background:
+        linear-gradient(135deg, rgb(157 124 255 / 15%), transparent 52%),
+        var(--surface);
+    }
+    .summary::after {
+      position: absolute;
+      right: -60px;
+      bottom: -85px;
+      width: 240px;
+      height: 240px;
+      content: "";
+      border-radius: 50%;
+      background: radial-gradient(circle, rgb(85 214 239 / 16%), transparent 67%);
+      pointer-events: none;
+    }
+    .summary-label { color: var(--muted); font-size: 13px; }
+    .big-number { margin: 6px 0 3px; font-size: clamp(38px, 6vw, 68px); font-weight: 820; line-height: 1; letter-spacing: -.055em; }
+    .summary-meta { display: flex; flex-wrap: wrap; gap: 8px 18px; color: var(--muted); font-size: 13px; }
+    .summary-meta strong { color: var(--text); }
+
+    .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .kpi { min-width: 0; padding: 17px; box-shadow: none; }
+    .kpi .label { min-height: 38px; color: var(--muted); font-size: 12px; }
+    .kpi .value { margin-top: 8px; overflow-wrap: anywhere; font: 750 clamp(20px, 2.7vw, 29px)/1.1 var(--mono); }
+    .kpi .detail { margin-top: 8px; color: var(--muted); font-size: 11px; }
+    .accent-green { color: var(--green); }
+    .accent-purple { color: #b9a6ff; }
+    .accent-cyan { color: var(--cyan); }
+
+    .detail-panel { padding: 22px; box-shadow: none; }
+    .detail-panel h2 { margin: 0 0 16px; font-size: 17px; }
+    .bar { display: flex; width: 100%; height: 12px; overflow: hidden; border-radius: 999px; background: var(--surface-3); }
+    .segment { min-width: 0; height: 100%; transition: width .25s ease; }
+    .segment.base { background: var(--green-2); }
+    .segment.replay { background: var(--purple); }
+    .segment.props { background: var(--cyan); }
+    .legend { display: flex; flex-wrap: wrap; gap: 12px 20px; margin: 13px 0 18px; color: var(--muted); font-size: 12px; }
+    .legend span { display: inline-flex; align-items: center; gap: 7px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+
+    .breakdown { width: 100%; border-collapse: collapse; }
+    .breakdown th, .breakdown td { padding: 11px 0; border-bottom: 1px solid var(--border); text-align: right; font-size: 13px; }
+    .breakdown th:first-child, .breakdown td:first-child { text-align: left; }
+    .breakdown th { color: var(--muted); font-size: 11px; font-weight: 650; text-transform: uppercase; }
+    .breakdown tr:last-child td { border-bottom: 0; font-weight: 760; }
+
+    .scenario-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; }
+    .scenario { padding: 13px; border: 1px solid var(--border); border-radius: 12px; background: #0b1120; }
+    .scenario .rate { color: var(--muted); font: 11px/1 var(--mono); }
+    .scenario .cost { margin-top: 9px; font: 720 15px/1.2 var(--mono); }
+
+    details { border-top: 1px solid var(--border); }
+    details:first-of-type { border-top: 0; }
+    summary { padding: 15px 0; cursor: pointer; font-weight: 700; }
+    details p, details ul { margin-top: 0; color: var(--muted); font-size: 13px; }
+    details ul { padding-left: 20px; }
+    code { font-family: var(--mono); color: #d7cfff; }
+
+    .formula {
+      overflow-x: auto;
+      padding: 13px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: #d7dfed;
+      background: #090e1a;
+      font: 12px/1.6 var(--mono);
+      white-space: pre;
+    }
+
+    .notice {
+      display: flex;
+      gap: 11px;
+      padding: 14px 16px;
+      border: 1px solid rgb(255 182 97 / 28%);
+      border-radius: 12px;
+      color: #e9d3b7;
+      background: rgb(255 182 97 / 7%);
+      font-size: 12px;
+    }
+    .notice b { color: var(--orange); }
+
+    .toast {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      z-index: 50;
+      padding: 12px 16px;
+      border: 1px solid rgb(181 245 66 / 40%);
+      border-radius: 11px;
+      color: var(--text);
+      background: #17221a;
+      box-shadow: var(--shadow);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(12px);
+      transition: .2s ease;
+    }
+    .toast.show { opacity: 1; transform: none; }
+
+    footer { padding: 24px 0 38px; border-top: 1px solid var(--border); color: var(--muted); font-size: 12px; }
+    footer .footer-grid { display: flex; justify-content: space-between; gap: 22px; }
+    footer p { max-width: 850px; margin: 0; }
+
+    @media (max-width: 900px) {
+      .hero, .layout { grid-template-columns: 1fr; }
+      .hero-note { align-self: auto; }
+      .kpi .value { font-size: 24px; }
+    }
+    @media (max-width: 580px) {
+      .shell { width: min(100% - 20px, 1440px); }
+      .topbar { align-items: flex-start; }
+      .brand div span { display: none; }
+      .hero { padding-top: 25px; }
+      .field-grid, .kpis { grid-template-columns: 1fr; }
+      .field.span-2, .section-title { grid-column: span 1; }
+      .scenario-grid { grid-template-columns: 1fr 1fr; }
+      .summary, .form-body, .detail-panel { padding: 18px; }
+      footer .footer-grid { display: block; }
+    }
+
+    @media print {
+      :root { color-scheme: light; --bg: #fff; --surface: #fff; --surface-2: #fff; --surface-3: #eee; --border: #cad0d8; --text: #111; --muted: #4c5562; }
+      body { background: #fff; }
+      .actions, .form-panel, .skip-link, .toast { display: none !important; }
+      .hero, .layout { grid-template-columns: 1fr; }
+      .layout { padding-bottom: 10px; }
+      .panel { box-shadow: none; break-inside: avoid; }
+      a { color: #1456a0; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#calculator">Ir para a calculadora</a>
+
+  <header class="shell topbar">
+    <div class="brand" aria-label="Dynatrace RUM Estimator">
+      <span class="mark" aria-hidden="true"></span>
+      <div>
+        <strong>RUM Estimator</strong>
+        <span>Mobile · DPS &amp; DEM Classic</span>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn" type="button" id="resetBtn">Restaurar</button>
+      <button class="btn" type="button" id="printBtn">Imprimir</button>
+      <button class="btn primary" type="button" id="shareBtn">Copiar cenário</button>
+    </div>
+  </header>
+
+  <main class="shell" id="calculator">
+    <section class="hero" aria-labelledby="page-title">
+      <div>
+        <p class="eyebrow">Estimativa educacional · 04 set 2026</p>
+        <h1 id="page-title">Quanto custa observar a jornada real?</h1>
+        <p class="lead">Modele sessões, replay, propriedades e amostragem com as regras públicas do Dynatrace. Depois substitua os preços pela sua rate card.</p>
+      </div>
+      <aside class="hero-note">
+        <strong>Estimativa ≠ fatura</strong>
+        <p>Billing Usage Events e Account Management são as fontes autoritativas. Esta página funciona offline e não envia nenhum dado.</p>
+      </aside>
+    </section>
+
+    <div class="layout">
+      <form class="panel form-panel" id="costForm" novalidate>
+        <div class="panel-header">
+          <h2>Premissas do cenário</h2>
+          <p>Todos os campos atualizam o resultado imediatamente.</p>
+        </div>
+        <div class="form-body">
+          <div class="field-grid">
+            <div class="field">
+              <label for="model">Licenciamento</label>
+              <select id="model" name="model">
+                <option value="dps">DPS (atual)</option>
+                <option value="classic">Classic / DEM</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="currency">Moeda <span class="hint">preços informados</span></label>
+              <select id="currency" name="currency">
+                <option value="USD">USD</option>
+                <option value="BRL">BRL</option>
+                <option value="EUR">EUR</option>
+              </select>
+            </div>
+
+            <div class="section-title">Volume</div>
+
+            <div class="field">
+              <label for="visitsPerDay">Visitas por dia</label>
+              <input id="visitsPerDay" name="visitsPerDay" type="number" inputmode="decimal" min="0" step="100" value="5000">
+            </div>
+            <div class="field">
+              <label for="days">Dias no período</label>
+              <input id="days" name="days" type="number" inputmode="numeric" min="1" max="366" step="1" value="30">
+            </div>
+            <div class="field">
+              <label for="bounceRate">Bounce <span class="hint">1 ação</span></label>
+              <div class="control-wrap has-suffix">
+                <input id="bounceRate" name="bounceRate" type="number" inputmode="decimal" min="0" max="100" step="0.1" value="10">
+                <span class="suffix">%</span>
+              </div>
+            </div>
+            <div class="field">
+              <label for="rumCapture">Captura RUM</label>
+              <div class="control-wrap has-suffix">
+                <input id="rumCapture" name="rumCapture" type="number" inputmode="decimal" min="0" max="100" step="0.1" value="100">
+                <span class="suffix">%</span>
+              </div>
+            </div>
+            <div class="field">
+              <label for="appsPerVisit">Apps por visita <span class="hint">híbrido = 1</span></label>
+              <input id="appsPerVisit" name="appsPerVisit" type="number" inputmode="decimal" min="0" step="0.1" value="1">
+            </div>
+            <div class="field">
+              <label for="hourBlocks">Blocos de hora <span class="hint">70 min = 2</span></label>
+              <input id="hourBlocks" name="hourBlocks" type="number" inputmode="decimal" min="1" step="0.1" value="1">
+            </div>
+
+            <div class="section-title">Replay e propriedades</div>
+
+            <div class="field">
+              <label for="replayCapture">Replay no RUM capturado</label>
+              <div class="control-wrap has-suffix">
+                <input id="replayCapture" name="replayCapture" type="number" inputmode="decimal" min="0" max="100" step="0.1" value="20">
+                <span class="suffix">%</span>
+              </div>
+            </div>
+            <div class="field">
+              <label for="properties">Propriedades/sessão <span class="hint">20 incluídas</span></label>
+              <input id="properties" name="properties" type="number" inputmode="numeric" min="0" step="1" value="25">
+            </div>
+            <div class="field span-2">
+              <label for="propertyPresence">Presença média das extras <span class="hint">sessões em que aparecem</span></label>
+              <div class="control-wrap has-suffix">
+                <input id="propertyPresence" name="propertyPresence" type="number" inputmode="decimal" min="0" max="100" step="0.1" value="100">
+                <span class="suffix">%</span>
+              </div>
+            </div>
+
+            <div class="section-title">Rate card</div>
+
+            <div id="dpsFields" class="field span-2">
+              <div class="field-grid">
+                <div class="field">
+                  <label for="rumPrice">RUM sem replay <span class="hint">por sessão</span></label>
+                  <input id="rumPrice" name="rumPrice" type="number" inputmode="decimal" min="0" step="0.00001" value="0.00225">
+                </div>
+                <div class="field">
+                  <label for="replayPrice">RUM com replay <span class="hint">por sessão</span></label>
+                  <input id="replayPrice" name="replayPrice" type="number" inputmode="decimal" min="0" step="0.00001" value="0.0045">
+                </div>
+                <div class="field span-2">
+                  <label for="propertyPrice">RUM Property <span class="hint">por ocorrência faturável</span></label>
+                  <input id="propertyPrice" name="propertyPrice" type="number" inputmode="decimal" min="0" step="0.00001" value="0.0001">
+                </div>
+              </div>
+            </div>
+
+            <div id="classicFields" class="field span-2" hidden>
+              <div class="field-grid">
+                <div class="field">
+                  <label for="demRumRate">DEM sem replay</label>
+                  <input id="demRumRate" name="demRumRate" type="number" inputmode="decimal" min="0" step="0.01" value="0.25">
+                </div>
+                <div class="field">
+                  <label for="demReplayRate">DEM com replay</label>
+                  <input id="demReplayRate" name="demReplayRate" type="number" inputmode="decimal" min="0" step="0.01" value="1">
+                </div>
+                <div class="field">
+                  <label for="demPropertyRate">DEM por propriedade</label>
+                  <input id="demPropertyRate" name="demPropertyRate" type="number" inputmode="decimal" min="0" step="0.01" value="0.01">
+                </div>
+                <div class="field">
+                  <label for="demPrice">Preço por DEM <span class="hint">contratual/opcional</span></label>
+                  <input id="demPrice" name="demPrice" type="number" inputmode="decimal" min="0" step="0.0001" value="0">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+
+      <section class="results" aria-label="Resultado da estimativa" aria-live="polite">
+        <article class="panel summary">
+          <div class="summary-label" id="primaryLabel">Custo mensal estimado</div>
+          <div class="big-number" id="primaryValue">US$ 0,00</div>
+          <div class="summary-meta">
+            <span>Anual: <strong id="annualValue">US$ 0,00</strong></span>
+            <span id="secondaryMeta">Por visita bruta: <strong id="perVisitValue">US$ 0,00</strong></span>
+          </div>
+        </article>
+
+        <div class="kpis">
+          <article class="panel kpi">
+            <div class="label">Sessões RUM faturáveis</div>
+            <div class="value accent-green" id="billedSessions">0</div>
+            <div class="detail" id="eligibleDetail">0 visitas não bounce</div>
+          </article>
+          <article class="panel kpi">
+            <div class="label">Sessões com replay</div>
+            <div class="value accent-purple" id="replaySessions">0</div>
+            <div class="detail" id="replayDetail">0% do RUM capturado</div>
+          </article>
+          <article class="panel kpi">
+            <div class="label">Ocorrências de propriedades extras</div>
+            <div class="value accent-cyan" id="propertyOccurrences">0</div>
+            <div class="detail" id="propertyDetail">0 além das 20 incluídas</div>
+          </article>
+        </div>
+
+        <article class="panel detail-panel">
+          <h2 id="breakdownTitle">Composição do custo mensal</h2>
+          <div class="bar" aria-label="Distribuição do custo" role="img">
+            <span class="segment base" id="barBase"></span>
+            <span class="segment replay" id="barReplay"></span>
+            <span class="segment props" id="barProps"></span>
+          </div>
+          <div class="legend">
+            <span style="color:var(--green-2)"><i class="dot"></i> RUM sem replay</span>
+            <span style="color:var(--purple)"><i class="dot"></i> RUM com replay</span>
+            <span style="color:var(--cyan)"><i class="dot"></i> Propriedades</span>
+          </div>
+          <table class="breakdown">
+            <thead>
+              <tr><th>Componente</th><th>Quantidade</th><th id="unitHeader">Valor</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>RUM sem replay</td><td id="baseQuantity">0</td><td id="baseCost">—</td></tr>
+              <tr><td>RUM com replay</td><td id="replayQuantity">0</td><td id="replayCost">—</td></tr>
+              <tr><td>Propriedades extras</td><td id="propsQuantity">0</td><td id="propsCost">—</td></tr>
+              <tr><td>Total mensal</td><td></td><td id="tableTotal">—</td></tr>
+            </tbody>
+          </table>
+        </article>
+
+        <article class="panel detail-panel">
+          <h2>Sensibilidade à captura RUM</h2>
+          <div class="scenario-grid" id="scenarioGrid"></div>
+        </article>
+
+        <article class="panel detail-panel">
+          <h2>Como esta estimativa funciona</h2>
+          <details open>
+            <summary>Premissas calculadas</summary>
+            <ul id="assumptionList"></ul>
+          </details>
+          <details>
+            <summary>Fórmula</summary>
+            <div class="formula">sessões = visitas × (1 − bounce) × apps × blocos/hora × captura RUM
+replay = sessões × captura replay
+extras = max(0, propriedades − 20) × sessões × presença
+
+DPS = semReplay × preçoRUM + replay × preçoReplay + extras × preçoPropriedade
+DEM = semReplay × 0,25 + replay × 1,0 + extras × 0,01</div>
+          </details>
+          <details>
+            <summary>Regras e limitações</summary>
+            <ul>
+              <li>Visitas com uma única ação (bounce) não são faturadas.</li>
+              <li>Cada aplicação e cada hora iniciada podem gerar nova sessão faturável; híbrido web/mobile é exceção.</li>
+              <li>Replay substitui o preço base da sessão; não é somado como uma segunda sessão.</li>
+              <li>Até 20 propriedades por aplicação são incluídas; as extras são cobradas nas sessões em que aparecem.</li>
+              <li>A estimativa não inclui descontos, compromisso, overage, Synthetic ou outras capacidades.</li>
+            </ul>
+          </details>
+        </article>
+
+        <div class="notice">
+          <b>Atenção</b>
+          <span>Preços DPS padrão são os valores de lista usados no exemplo oficial: US$ 0,00225, US$ 0,0045 e US$ 0,0001. Trocar a moeda apenas altera a formatação; informe preços na moeda escolhida.</span>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    <div class="shell footer-grid">
+      <p>Baseado nas páginas oficiais <a href="https://docs.dynatrace.com/docs/license/capabilities/real-user-synthetic-monitoring/real-user-monitoring" target="_blank" rel="noreferrer">RUM consumption (DPS)</a> e <a href="https://docs.dynatrace.com/docs/license/classic-licensing/digital-experience-monitoring-units" target="_blank" rel="noreferrer">DEM units (Classic)</a>. Verificado em 04/09/2026.</p>
+      <p><a href="docs/07-custos-e-governanca.md">Metodologia completa</a></p>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite">Cenário copiado.</div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const defaults = Object.freeze({
+        model: "dps",
+        currency: "USD",
+        visitsPerDay: 5000,
+        days: 30,
+        bounceRate: 10,
+        rumCapture: 100,
+        appsPerVisit: 1,
+        hourBlocks: 1,
+        replayCapture: 20,
+        properties: 25,
+        propertyPresence: 100,
+        rumPrice: 0.00225,
+        replayPrice: 0.0045,
+        propertyPrice: 0.0001,
+        demRumRate: 0.25,
+        demReplayRate: 1,
+        demPropertyRate: 0.01,
+        demPrice: 0
+      });
+
+      const ids = Object.keys(defaults);
+      const form = document.querySelector("#costForm");
+      const $ = (id) => document.getElementById(id);
+      let toastTimer;
+
+      const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+      const num = (value, fallback = 0) => {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : fallback;
+      };
+
+      function normalize(raw) {
+        return {
+          model: raw.model === "classic" ? "classic" : "dps",
+          currency: ["USD", "BRL", "EUR"].includes(raw.currency) ? raw.currency : "USD",
+          visitsPerDay: Math.max(0, num(raw.visitsPerDay)),
+          days: clamp(num(raw.days, 30), 1, 366),
+          bounceRate: clamp(num(raw.bounceRate), 0, 100),
+          rumCapture: clamp(num(raw.rumCapture), 0, 100),
+          appsPerVisit: Math.max(0, num(raw.appsPerVisit, 1)),
+          hourBlocks: Math.max(1, num(raw.hourBlocks, 1)),
+          replayCapture: clamp(num(raw.replayCapture), 0, 100),
+          properties: Math.max(0, num(raw.properties)),
+          propertyPresence: clamp(num(raw.propertyPresence), 0, 100),
+          rumPrice: Math.max(0, num(raw.rumPrice)),
+          replayPrice: Math.max(0, num(raw.replayPrice)),
+          propertyPrice: Math.max(0, num(raw.propertyPrice)),
+          demRumRate: Math.max(0, num(raw.demRumRate)),
+          demReplayRate: Math.max(0, num(raw.demReplayRate)),
+          demPropertyRate: Math.max(0, num(raw.demPropertyRate)),
+          demPrice: Math.max(0, num(raw.demPrice))
+        };
+      }
+
+      function calculate(raw, captureOverride) {
+        const v = normalize(raw);
+        const captureRate = captureOverride == null ? v.rumCapture : clamp(captureOverride, 0, 100);
+        const grossVisits = v.visitsPerDay * v.days;
+        const eligibleVisits = grossVisits * (1 - v.bounceRate / 100);
+        const billedSessions = eligibleVisits * v.appsPerVisit * v.hourBlocks * (captureRate / 100);
+        const replaySessions = billedSessions * (v.replayCapture / 100);
+        const baseSessions = billedSessions - replaySessions;
+        const extraPropertyCount = Math.max(0, v.properties - 20);
+        const propertyOccurrences = billedSessions * extraPropertyCount * (v.propertyPresence / 100);
+
+        const dpsBase = baseSessions * v.rumPrice;
+        const dpsReplay = replaySessions * v.replayPrice;
+        const dpsProps = propertyOccurrences * v.propertyPrice;
+        const dpsTotal = dpsBase + dpsReplay + dpsProps;
+
+        const demBase = baseSessions * v.demRumRate;
+        const demReplay = replaySessions * v.demReplayRate;
+        const demProps = propertyOccurrences * v.demPropertyRate;
+        const demTotal = demBase + demReplay + demProps;
+
+        return {
+          ...v,
+          captureRate,
+          grossVisits,
+          eligibleVisits,
+          billedSessions,
+          replaySessions,
+          baseSessions,
+          extraPropertyCount,
+          propertyOccurrences,
+          dps: { base: dpsBase, replay: dpsReplay, props: dpsProps, total: dpsTotal },
+          dem: { base: demBase, replay: demReplay, props: demProps, total: demTotal },
+          monetaryClassic: demTotal * v.demPrice
+        };
+      }
+
+      function readForm() {
+        const raw = {};
+        ids.forEach((id) => { raw[id] = $(id).value; });
+        return normalize(raw);
+      }
+
+      const numberFmt = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
+      const compactFmt = new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 });
+      const formatNumber = (value, compact = false) => (compact ? compactFmt : numberFmt).format(value);
+      const formatMoney = (value, currency) => new Intl.NumberFormat("pt-BR", {
+        style: "currency",
+        currency,
+        minimumFractionDigits: value > 0 && value < 0.01 ? 5 : 2,
+        maximumFractionDigits: value > 0 && value < 0.01 ? 5 : 2
+      }).format(value);
+
+      function widths(parts) {
+        const total = parts.reduce((sum, part) => sum + part, 0);
+        return total > 0 ? parts.map((part) => 100 * part / total) : [0, 0, 0];
+      }
+
+      function render() {
+        const value = calculate(readForm());
+        const classic = value.model === "classic";
+        $("dpsFields").hidden = classic;
+        $("classicFields").hidden = !classic;
+
+        $("billedSessions").textContent = compactFmt.format(value.billedSessions);
+        $("eligibleDetail").textContent = `${formatNumber(value.eligibleVisits)} visitas não bounce`;
+        $("replaySessions").textContent = compactFmt.format(value.replaySessions);
+        $("replayDetail").textContent = `${formatNumber(value.replayCapture)}% do RUM capturado`;
+        $("propertyOccurrences").textContent = compactFmt.format(value.propertyOccurrences);
+        $("propertyDetail").textContent = `${formatNumber(value.extraPropertyCount)} além das 20 incluídas`;
+        $("baseQuantity").textContent = formatNumber(value.baseSessions);
+        $("replayQuantity").textContent = formatNumber(value.replaySessions);
+        $("propsQuantity").textContent = formatNumber(value.propertyOccurrences);
+
+        const parts = classic
+          ? [value.dem.base, value.dem.replay, value.dem.props]
+          : [value.dps.base, value.dps.replay, value.dps.props];
+        const barWidths = widths(parts);
+        $("barBase").style.width = `${barWidths[0]}%`;
+        $("barReplay").style.width = `${barWidths[1]}%`;
+        $("barProps").style.width = `${barWidths[2]}%`;
+
+        if (classic) {
+          $("primaryLabel").textContent = "Consumo mensal estimado";
+          $("primaryValue").textContent = `${formatNumber(value.dem.total)} DEM`;
+          $("annualValue").textContent = `${formatNumber(value.dem.total * 12)} DEM`;
+          $("secondaryMeta").innerHTML = value.demPrice > 0
+            ? `Custo mensal: <strong>${formatMoney(value.monetaryClassic, value.currency)}</strong>`
+            : "Informe o preço contratual por DEM para converter em moeda.";
+          $("breakdownTitle").textContent = "Composição do consumo mensal";
+          $("unitHeader").textContent = "DEM";
+          $("baseCost").textContent = formatNumber(value.dem.base);
+          $("replayCost").textContent = formatNumber(value.dem.replay);
+          $("propsCost").textContent = formatNumber(value.dem.props);
+          $("tableTotal").textContent = `${formatNumber(value.dem.total)} DEM`;
+        } else {
+          $("primaryLabel").textContent = "Custo mensal estimado";
+          $("primaryValue").textContent = formatMoney(value.dps.total, value.currency);
+          $("annualValue").textContent = formatMoney(value.dps.total * 12, value.currency);
+          const perVisit = value.grossVisits > 0 ? value.dps.total / value.grossVisits : 0;
+          $("secondaryMeta").innerHTML = `Por visita bruta: <strong id="perVisitValue">${formatMoney(perVisit, value.currency)}</strong>`;
+          $("breakdownTitle").textContent = "Composição do custo mensal";
+          $("unitHeader").textContent = "Valor";
+          $("baseCost").textContent = formatMoney(value.dps.base, value.currency);
+          $("replayCost").textContent = formatMoney(value.dps.replay, value.currency);
+          $("propsCost").textContent = formatMoney(value.dps.props, value.currency);
+          $("tableTotal").textContent = formatMoney(value.dps.total, value.currency);
+        }
+
+        $("assumptionList").innerHTML = [
+          `${formatNumber(value.grossVisits)} visitas brutas no período.`,
+          `${formatNumber(value.eligibleVisits)} visitas elegíveis após ${formatNumber(value.bounceRate)}% de bounce.`,
+          `${formatNumber(value.appsPerVisit)} app(s) × ${formatNumber(value.hourBlocks)} bloco(s) de hora × ${formatNumber(value.captureRate)}% de captura.`,
+          `${formatNumber(value.baseSessions)} sessões sem replay e ${formatNumber(value.replaySessions)} com replay.`,
+          `${formatNumber(value.extraPropertyCount)} propriedades extras com presença média de ${formatNumber(value.propertyPresence)}%.`
+        ].map((line) => `<li>${line}</li>`).join("");
+
+        $("scenarioGrid").innerHTML = [25, 50, 75, 100].map((rate) => {
+          const scenario = calculate(value, rate);
+          const amount = classic
+            ? `${compactFmt.format(scenario.dem.total)} DEM`
+            : formatMoney(scenario.dps.total, value.currency);
+          return `<div class="scenario"><div class="rate">CAPTURA ${rate}%</div><div class="cost">${amount}</div></div>`;
+        }).join("");
+
+        saveToUrl(value);
+      }
+
+      function saveToUrl(values) {
+        const params = new URLSearchParams();
+        ids.forEach((id) => {
+          if (String(values[id]) !== String(defaults[id])) params.set(id, values[id]);
+        });
+        const query = params.toString();
+        const next = `${location.pathname}${query ? `?${query}` : ""}${location.hash}`;
+        try { history.replaceState(null, "", next); } catch (_) { /* local file restrictions */ }
+      }
+
+      function loadFromUrl() {
+        const params = new URLSearchParams(location.search);
+        ids.forEach((id) => {
+          const element = $(id);
+          element.value = params.has(id) ? params.get(id) : defaults[id];
+        });
+      }
+
+      function reset() {
+        ids.forEach((id) => { $(id).value = defaults[id]; });
+        render();
+        showToast("Cenário restaurado.");
+      }
+
+      function showToast(message) {
+        const toast = $("toast");
+        toast.textContent = message;
+        toast.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.remove("show"), 2200);
+      }
+
+      async function share() {
+        const url = location.href;
+        try {
+          await navigator.clipboard.writeText(url);
+          showToast("Cenário copiado para a área de transferência.");
+        } catch (_) {
+          const temporary = document.createElement("textarea");
+          temporary.value = url;
+          temporary.setAttribute("readonly", "");
+          temporary.style.position = "fixed";
+          temporary.style.opacity = "0";
+          document.body.appendChild(temporary);
+          temporary.select();
+          const copied = document.execCommand("copy");
+          temporary.remove();
+          showToast(copied ? "Cenário copiado." : "Copie a URL exibida no navegador.");
+        }
+      }
+
+      form.addEventListener("input", render);
+      form.addEventListener("change", render);
+      form.addEventListener("submit", (event) => event.preventDefault());
+      $("resetBtn").addEventListener("click", reset);
+      $("printBtn").addEventListener("click", () => window.print());
+      $("shareBtn").addEventListener("click", share);
+
+      window.RumCalculator = Object.freeze({ calculate, normalize, defaults });
+      loadFromUrl();
+      render();
+    })();
+  </script>
+</body>
+</html>
