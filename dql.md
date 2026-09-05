@@ -1,8 +1,22 @@
 ```sh
 fetch dt.maintenance.windows, from:-30d
-| filter event.name == "Maintenance Window Start"
+
+| summarize
+    registros = count(),
+    by:{
+        dt.settings.object_id,
+        maintenance_window.title,
+        maintenance_window.filter,
+        start_time,
+        end_time
+    }
 
 | fieldsAdd
+    inicio = formatTimestamp(
+        start_time,
+        format:"yyyy-MM-dd HH:mm",
+        timezone:"America/Sao_Paulo"
+    ),
     horario = formatTimestamp(
         start_time,
         format:"HH:mm",
@@ -16,17 +30,16 @@ fetch dt.maintenance.windows, from:-30d
 
 | filter horario == "19:00"
 
-| summarize {
-    execucoes = count(),
+| summarize
+    ocorrencias = count(),
     datas = collectDistinct(data),
-    primeira_execucao = min(start_time),
-    ultima_execucao = max(start_time)
-  },
-  by:{
-    dt.settings.object_id,
-    maintenance_window.title,
-    maintenance_window.filter
-  }
+    primeira_ocorrencia = min(start_time),
+    ultima_ocorrencia = max(start_time),
+    by:{
+        dt.settings.object_id,
+        maintenance_window.title,
+        maintenance_window.filter
+    }
 
-| sort execucoes desc
+| sort ocorrencias desc
 ```
