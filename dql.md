@@ -68,3 +68,39 @@ fetch dt.maintenance.windows, from:-30d
 
 | sort execucoes desc
 ```
+
+
+```sh
+fetch dt.maintenance.windows, from:-30d
+| filter event.type == "MAINTENANCE_WINDOW_START"
+
+| fieldsAdd
+    hora = getHour(start_time, timezone:"America/Sao_Paulo"),
+    minuto = getMinute(start_time, timezone:"America/Sao_Paulo"),
+    data = formatTimestamp(
+        start_time,
+        format:"yyyy-MM-dd",
+        timezone:"America/Sao_Paulo"
+    ),
+    dia_semana = formatTimestamp(
+        start_time,
+        format:"EEE",
+        timezone:"America/Sao_Paulo"
+    )
+
+| filter hora == 19 and minuto == 0
+
+| summarize
+    `Quantidade de execuções` = count(),
+    `Datas` = collectDistinct(data),
+    `Dias da semana` = collectDistinct(dia_semana),
+    `Primeira ocorrência` = min(start_time),
+    `Última ocorrência` = max(start_time),
+    by:{
+        `Maintenance Window ID` = dt.settings.object_id,
+        `Nome` = maintenance_window.title,
+        `Filtro aplicado` = maintenance_window.filter
+    }
+
+| sort `Quantidade de execuções` desc
+```
